@@ -35,10 +35,10 @@ export default defineConfig({
         url: baseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
-        env: {
-          ...process.env,
-          // Public pages remain testable without Supabase credentials. Authenticated
-          // workflows are explicitly reported as requiring configured test credentials.
-        },
+        env: Object.fromEntries(
+            Object.entries(process.env).filter(
+              (entry): entry is [string, string] => entry[1] !== undefined
+            )
+          ),
       },
 });

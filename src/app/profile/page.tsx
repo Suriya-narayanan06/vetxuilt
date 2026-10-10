@@ -1,0 +1,17 @@
+"use client";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+export default function ProfilePage(){
+ const [busy,setBusy]=useState(false);const [msg,setMsg]=useState("");const [userId,setUserId]=useState("");const [email,setEmail]=useState("");
+ const [v,setV]=useState({full_name:"",phone:"",college_name:"",course:"",department:"",study_year:"",bio:"",skills:"",portfolio_url:"",role:"both",avatar_url:""});
+ useEffect(()=>{(async()=>{try{const db=createClient();const {data:{user}}=await db.auth.getUser();if(!user){window.location.href="/login";return}setUserId(user.id);setEmail(user.email||"");const {data}=await db.from("profiles").select("*").eq("id",user.id).maybeSingle();if(data)setV(old=>({...old,...data,skills:(data.skills||[]).join(", "),study_year:data.study_year||""}));else setV(old=>({...old,full_name:user.user_metadata?.full_name||"",phone:user.user_metadata?.phone||""}));}catch(e){setMsg(e instanceof Error?e.message:"Unable to load profile.")}})()},[]);
+ function change(e:React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement|HTMLSelectElement>){setV({...v,[e.target.name]:e.target.value})}
+ async function save(e:React.FormEvent){e.preventDefault();setBusy(true);setMsg("");try{const db=createClient();const {error}=await db.from("profiles").upsert({id:userId,email,full_name:v.full_name,phone:v.phone,college_name:v.college_name,course:v.course,department:v.department,study_year:v.study_year,bio:v.bio,skills:v.skills.split(",").map(x=>x.trim()).filter(Boolean),portfolio_url:v.portfolio_url,role:v.role,avatar_url:v.avatar_url},{onConflict:"id"});if(error)throw error;setMsg("Profile saved.");}catch(e){setMsg(e instanceof Error?e.message:"Profile could not be saved. Check database migration and required fields.")}finally{setBusy(false)}}
+ return <main className="shell page"><div className="eyebrow">Account / Student profile</div><h1 className="page-title">Your profile, your proof.</h1><p className="page-lead">Make your skills and college background clear. Only share details you're comfortable showing to other students.</p>
+ <form className="form-card" onSubmit={save}><div className="form-grid">
+ {[["full_name","Full name"],["phone","Phone number"],["college_name","College / University"],["course","Course (e.g. B.Tech)"],["department","Department"],["study_year","Year of study"],["avatar_url","Profile photo URL"],["portfolio_url","Portfolio URL"]].map(([n,l])=><div className="field" key={n}><label>{l}</label><input name={n} value={(v as Record<string,string>)[n]} onChange={change} placeholder={l} /></div>)}
+ <div className="field"><label>Account role</label><select name="role" value={v.role} onChange={change}><option value="both">Client + Developer</option><option value="client">Client</option><option value="developer">Developer</option></select></div>
+ <div className="field"><label>Skills (comma separated)</label><input name="skills" value={v.skills} onChange={change} placeholder="Python, Flutter, UI/UX"/></div>
+ <div className="field full"><label>About you</label><textarea name="bio" value={v.bio} onChange={change} maxLength={1500} placeholder="Your interests, experience and what you want to build…"/></div>
+ <div className="field full"><button className="btn btn-primary" disabled={busy||!userId}>{busy?"Saving…":"Save profile"}</button></div></div>{msg&&<div className="note" role="status" style={{marginTop:14}}>{msg}</div>}</form></main>;
+}

@@ -18,9 +18,12 @@ test.describe("Security baseline agent", () => {
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test("admin page does not show approval controls to an unauthenticated visitor", async ({ page }) => {
+  test("admin page redirects unauthenticated visitors to login", async ({ page }) => {
     await page.goto("/admin");
-    await expect(page.getByRole("heading", { name: /verification control room/i })).toBeVisible();
+    await expect(page).toHaveURL(/\/login(?:\?.*)?$/);
+    await expect(
+      page.getByRole("heading", { name: /back to building/i })
+    ).toBeVisible();
     await expect(page.getByRole("button", { name: "Approve" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Reject" })).toHaveCount(0);
   });

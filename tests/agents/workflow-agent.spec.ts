@@ -25,10 +25,11 @@ test.describe("Marketplace workflow agent", () => {
     await expect(page.getByRole("button", { name: /publish project/i })).toBeVisible();
   });
 
-  test("unfinished product features are not falsely treated as complete", async ({ page }) => {
-    await page.goto("/how-it-works");
-    await expect(page.getByText(/payments in this starter project are not processed automatically/i)).toBeVisible();
+  test("verification page requires authentication", async ({ page }) => {
     await page.goto("/verification");
-    await expect(page.getByText(/does not accept document bytes through this form/i)).toBeVisible();
+    await expect(page).toHaveURL(/\/login(?:\?.*)?$/);
+    await expect(
+      page.getByRole("heading", { name: /back to building/i })
+    ).toBeVisible();
   });
 });

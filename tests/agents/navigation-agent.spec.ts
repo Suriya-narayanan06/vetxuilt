@@ -17,13 +17,29 @@ const routes = [
 
 test.describe("Navigation agent", () => {
   for (const [route, heading] of routes) {
-    test(`${route} responds and displays its expected page heading`, async ({ page }) => {
-      const response = await page.goto(route);
-      expect(response, `${route} should return a response`).not.toBeNull();
-      expect(response!.status(), `${route} HTTP status`).toBeLessThan(400);
-      await expect(page.locator("body")).toBeVisible();
-      await expect(page.getByRole("heading", { name: heading }).first()).toBeVisible();
-    });
+      test(`${route} responds with the expected page or access redirect`, async ({ page }) => {
+        const response = await page.goto(route);
+        expect(response, `${route} should return a response`).not.toBeNull();
+
+        const protectedRoutes = [
+          "/dashboard", "/verification", "/profile", "/messages", "/admin"
+        ];
+
+        if (protectedRoutes.includes(route)) {
+          await expect(page).toHaveURL(/\/login(?:\?.*)?$/);
+          await expect(
+            page.getByRole("heading", { name: /back to building/i })
+          ).toBeVisible();
+          await expect(page.getByRole("button", { name: "Approve" })).toHaveCount(0);
+          await expect(page.getByRole("button", { name: "Reject" })).toHaveCount(0);
+        } else {
+          expect(response.status()).toBeLessThan(400);
+          await expect(page.locator("body")).toBeVisible();
+          await expect(
+            page.getByRole("heading", { name: heading }).first()
+          ).toBeVisible();
+        }
+      });
   }
 
   test("primary homepage links navigate to the correct destinations", async ({ page }) => {
